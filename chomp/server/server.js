@@ -33,13 +33,13 @@ io.on("connection", (socket) => {
         const gameId = Math.random().toString(36).substr(2, 6).toUpperCase();
         socket.join(gameId);
 
-        const initialBoardState = Array(rows * cols).fill(0);
+        const initialBoardState = Array(rows).fill(Array(cols).fill(0));
         initialBoardState[0] = -1
         games[gameId] = {
             gameId,
             players: { [socket.id]: PLAYER_1 },
             board: {
-                boardState: initialBoardState,
+                state: initialBoardState,
                 rows: rows,
                 cols: cols
             },

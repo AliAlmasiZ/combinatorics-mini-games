@@ -7,7 +7,7 @@ import Game from "./Game/Game";
 const socket = io("http://localhost:5000")
 
 function App() {
-  const [view, setView] = useState("lobby")
+  const [view, setView] = useState("game")
   const [currentGameId, setCurrentGameId] = useState(null);
   const [currentPlayerNum, setCurrentPlayerNum] = useState(null);
 
