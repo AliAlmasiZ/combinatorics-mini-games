@@ -7,13 +7,19 @@ function Lobby({ socket , enterGame }) {
 
 
     useEffect(() => {
-        socket.on("gameCreated", ({ gameId, playerNum}) => {
-            enterGame(gameId, playerNum);
+        socket.on("gameCreated", (game) => {            
+            enterGame(game);
             toast.success("Game Created!")
         });
 
-        socket.on("error", (error) => {
-            toast.error(error)
+        socket.on("joinedGame", (game) => {
+            enterGame(game);
+            toast.success("joined the game")
+        });
+
+        socket.on("error", ({error}) => {
+            console.log("error from server:", error);
+            toast.error(error);
         })
 
         return () => {
@@ -36,6 +42,7 @@ function Lobby({ socket , enterGame }) {
         }
         const gameId = gameIdInput.toUpperCase();
         if(socket) {
+            console.log(`joining game ${gameId}`);
             socket.emit("joinGame", gameId);
         }
     };
@@ -57,7 +64,7 @@ function Lobby({ socket , enterGame }) {
                                 onChange={(e) => setRows(e.target.value)}
                                 min="1"
                                 max="20"
-                                className="p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
+                                className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
                             />
                             </label>
 
@@ -69,7 +76,7 @@ function Lobby({ socket , enterGame }) {
                                 onChange={(e) => setCols(e.target.value)}
                                 min="1"
                                 max="20"
-                                className="p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
+                                className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
                             />
                             </label>
                         </div>

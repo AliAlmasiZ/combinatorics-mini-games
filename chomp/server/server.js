@@ -2,6 +2,7 @@ const express = require("express")
 const http = require("http")
 const cors = require("cors")
 const socketIO = require("socket.io");
+const { log } = require("console");
 
 const app = express();
 const server = http.createServer(app)
@@ -18,7 +19,15 @@ const PLAYER_1 = 1;
 const PLAYER_2 = 2;
 
 const games = {};
+const users = {};
 
+function eatCell(row, col, board) {
+    for(let i = row; i < board.rows; i++) {
+        for(let j = col; j < board.cols; j++) {
+            board.state[i][j] = 1;
+        }
+    }
+}
 
 app.use(cors());
 
@@ -28,13 +37,16 @@ app.get("/game", (req, res) => {
 
 io.on("connection", (socket) => {
     console.log(`User connected: ${socket.id}`);
+    users[socket.id] = {
+        activeGameId: null
+    }
 
     socket.on('createGame', ({ cols, rows }) => {
         const gameId = Math.random().toString(36).substr(2, 6).toUpperCase();
         socket.join(gameId);
+        users[socket.id].activeGameId = gameId;
 
-        const initialBoardState = Array(rows).fill(Array(cols).fill(0));
-        initialBoardState[0] = -1
+        const initialBoardState = Array.from({length : rows}, () => Array(cols).fill(0))
         games[gameId] = {
             gameId,
             players: { [socket.id]: PLAYER_1 },
@@ -47,21 +59,25 @@ io.on("connection", (socket) => {
             isGameOver: false,
         };
 
-        console.log(`Game created with ID: ${gameId} by ${socket.id}`);
-        socket.emit('gameCreated', { gameId, playerNum: PLAYER_1 });
+        log(`Game created with ID: ${gameId} by ${socket.id}`);
+        socket.emit('gameCreated', games[gameId]);
     });
 
     socket.on('joinGame', (gameId) => {
         const game = games[gameId];
+        
         if (game) {
             if (Object.keys(game.players).length < 2 && !game.players[socket.id]) {
                 socket.join(gameId);
+                users[socket.id].activeGameId = gameId;
                 game.players[socket.id] = PLAYER_2;
-                console.log(`Player ${socket.id} joined game ${gameId}`);
+                log(`Player ${socket.id} joined game ${gameId}`);
+                socket.emit("joinedGame", game)
                 io.to(gameId).emit('gameUpdate', game);
             } else if (game.players[socket.id]) {
-                 socket.join(gameId);
-                 socket.emit('gameUpdate', game);
+                socket.join(gameId);
+                users[socket.id].activeGameId = gameId;
+                socket.emit('gameUpdate', game);
             }
             else {
                 socket.emit('error', 'Game is full.');
@@ -69,6 +85,18 @@ io.on("connection", (socket) => {
         } else {
             socket.emit('error', 'Game not found.');
         }
+    });
+
+    socket.on("cellClick", ({row, col}) => {
+        log('request recieved');
+        const gameId = users[socket.id].activeGameId;
+        const game = games[gameId];
+        try {
+            eatCell(row, col, game.board);
+        } catch(e) {
+            socket.emit('error', e)
+        }
+        io.to(gameId).emit('gameUpdate', game);
     });
 
     socket.on('disconnect', () => {
@@ -88,4 +116,22 @@ io.on("connection", (socket) => {
 
 server.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
+})
+
+
+process.stdin.resume();
+process.stdin.setEncoding("utf8");
+
+process.stdin.on("data", (input) => {
+    input = input.trim();
+    words = input.split(" ")
+    if(words[0].trim() == "get-board") {
+        const game = games[words[1].trim()];
+        for(let i = 0; i < game.board.rows; i++) {
+            for(let j = 0; j < game.board.cols; j++) {
+                process.stdout.write(`${game.board.state[i][j]} `)
+            }
+            process.stdout.write('\n')
+        }
+    }
 })

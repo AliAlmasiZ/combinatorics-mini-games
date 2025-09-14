@@ -1,35 +1,47 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import toast, { Toaster } from "react-hot-toast";
 import Board from "../Board/Board";
 import "./Game.css"
 
 
-function Game({socket, gameId, playerNum}) {
-
-    const testBoard = {
-        state : Array(5).fill(Array(5).fill(0)),
-        rows : 5,
-        cols : 5
-    }
+function Game({socket, initialGame}) {
+    const [ board, setBoard ] = useState(initialGame.board);
+    const gameId = initialGame.gameId;
 
     useEffect(() => {
-        socket.on("gameUpdate", () => {
-
+        socket.on("gameUpdate", (game) => {
+            setBoard(game.board)
+        });
+        socket.on("error", ({error}) => {
+            toast.error(error)
         });
 
         return () => {
             socket.off("gameUpdate");
+            socket.off("error");
         };
     }, [])
 
-    function meow() {
-        console.log("meow");
-        
+    function cellClicked(row, col) {
+        console.log(`user clicked on cell in row(${row}) and col(${col})`)
+        socket.emit("cellClick", {row, col})
     }
 
 
     return (
         <>
-            <Board board={testBoard} onCellClick={meow} />
+            <Toaster position="bottom-left" />
+            <button
+            onClick={() => {
+                navigator.clipboard.writeText(gameId)
+                .then(() => toast.success("Game ID Copied!"))
+                .catch(() => toast.error("Failed to copy Game ID"));
+            }}
+            className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg shadow-md mb-4"
+            >
+            {gameId}
+            </button>
+            <Board board={board} onCellClick={cellClicked} />
         </>
     );
 }
