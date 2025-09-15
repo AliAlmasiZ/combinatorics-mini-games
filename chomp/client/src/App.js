@@ -3,8 +3,7 @@ import './App.css';
 import Lobby from "./Lobby/Lobby";
 import io from "socket.io-client"
 import Game from "./Game/Game";
-
-const socket = io("http://localhost:5000")
+const socket = io("http://192.168.1.105:5000");
 
 function App() {
   const [view, setView] = useState("lobby")

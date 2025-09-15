@@ -2,13 +2,13 @@ const express = require("express")
 const http = require("http")
 const cors = require("cors")
 const socketIO = require("socket.io");
-const { log } = require("console");
+const { log, error } = require("console");
 
 const app = express();
 const server = http.createServer(app)
 const io = socketIO(server, {
     cors: {
-        origin: "http://localhost:3000",
+        origin: "*",
         methods: ["GET", "POST"],
     },
 });
@@ -88,12 +88,24 @@ io.on("connection", (socket) => {
     });
 
     socket.on("cellClick", ({row, col}) => {
-        log('request recieved');
         const gameId = users[socket.id].activeGameId;
         const game = games[gameId];
+        if(!game || game.isGameOver) return;
+        if(game.currentPlayer !== game.players[socket.id]) {
+            socket.emit('error', "Its not your turn!");
+            return;
+        }
+        if(game.board.state[row, col] === 1) {
+            socket.emit('error', "This piece is already eaten!");
+            return;
+        }
+        game.currentPlayer = game.currentPlayer === PLAYER_1 ? PLAYER_2 : PLAYER_1;
+        game.isGameOver = row === 0 && col === 0;
+
         try {
             eatCell(row, col, game.board);
         } catch(e) {
+            log("error in eating")
             socket.emit('error', e)
         }
         io.to(gameId).emit('gameUpdate', game);

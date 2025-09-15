@@ -11,7 +11,6 @@ function Board({board, onCellClick}) {
                     Array.from({length: board.cols}).map((_, c) => {
                         const isPoison = r === 0 && c === 0;
                         let isEaten = board.state && board.state[r] && board.state[r][c];
-                        console.log(board.state[r][c])
                         // if(r == 0) isEaten = true;
                         let className = `${isEaten ? "eaten " : ""}${isPoison ? "poison" : ""}`;
 
