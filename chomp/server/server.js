@@ -95,7 +95,7 @@ io.on("connection", (socket) => {
             socket.emit('error', "Its not your turn!");
             return;
         }
-        if(game.board.state[row, col] === 1) {
+        if(game.board.state[row][col] === 1) {
             socket.emit('error', "This piece is already eaten!");
             return;
         }
